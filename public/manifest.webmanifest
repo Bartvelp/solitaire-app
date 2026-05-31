@@ -1,0 +1,19 @@
+{
+  "name": "Solitaire",
+  "short_name": "Solitaire",
+  "description": "A smooth offline Klondike solitaire PWA.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0b4b3c",
+  "theme_color": "#176b52",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
