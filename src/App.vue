@@ -101,17 +101,28 @@
       v-if="canAutoComplete"
       class="auto-complete"
       type="button"
-      :disabled="isBusy"
+      :disabled="(isBusy && false)"
       @click="autoComplete"
     >
       Finish
     </button>
 
-    <button class="undo-button" type="button" :disabled="!history.length || isBusy" @click="undoMove" aria-label="Undo move">
+    <button class="undo-button" type="button" :disabled="!history.length || (isBusy && false)" @click="undoMove" aria-label="Undo move">
       <span aria-hidden="true">↶</span>
     </button>
 
-    <button v-if="isLocalhost" class="test-button" type="button" :disabled="isBusy" @click="prepareTestFinish">Test</button>
+    <button v-if="isLocalhost" class="test-button" type="button" :disabled="(isBusy && false)" @click="prepareTestFinish">Test</button>
+
+    <button
+      v-if="wakeLockSupported"
+      class="wake-button"
+      type="button"
+      :class="{ active: wantsWakeLock }"
+      :aria-pressed="wantsWakeLock"
+      @click="toggleWakeLock"
+    >
+      Keep awake
+    </button>
 
     <button class="new-game" type="button" :disabled="isBusy" @click="newGame">New</button>
 
@@ -217,6 +228,10 @@ export default {
       dealAttempts: 0,
       factIndex: Math.floor(Math.random() * ROMAN_FACTS.length),
       factTimer: null,
+      wakeLock: null,
+      wantsWakeLock: false,
+      isWakeLockEnabled: false,
+      wakeLockSupported: 'wakeLock' in navigator,
       winBurst: false,
       winSparks: Array.from({ length: 28 }, (_, index) => index + 1),
     };
@@ -256,10 +271,13 @@ export default {
     },
   },
   mounted() {
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
     this.newGame({ animate: false });
   },
   beforeUnmount() {
     this.stopFactRotation();
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    this.releaseWakeLock();
   },
   methods: {
     async newGame(options = {}) {
@@ -318,6 +336,7 @@ export default {
     },
     async createSolvableDeal() {
       this.isCalculatingDeal = true;
+      await this.sleep(50);
       this.dealAttempts = 0;
       this.startFactRotation();
 
@@ -327,7 +346,7 @@ export default {
           this.dealAttempts = attempt + 1;
 
           if (this.isDealSolvable(deal)) return deal;
-          if (attempt % 8 === 7) await this.sleep(0);
+          await this.sleep(10);
         }
       } finally {
         this.isCalculatingDeal = false;
@@ -345,6 +364,48 @@ export default {
       if (!this.factTimer) return;
       window.clearInterval(this.factTimer);
       this.factTimer = null;
+    },
+    async toggleWakeLock() {
+      if (this.wantsWakeLock) {
+        await this.releaseWakeLock();
+        return;
+      }
+
+      this.wantsWakeLock = true;
+      await this.requestWakeLock();
+    },
+    async requestWakeLock() {
+      if (!this.wakeLockSupported || document.visibilityState !== 'visible') return;
+
+      try {
+        this.wakeLock = await navigator.wakeLock.request('screen');
+        this.isWakeLockEnabled = true;
+        this.wakeLock.addEventListener('release', () => {
+          this.wakeLock = null;
+          this.isWakeLockEnabled = false;
+        });
+      } catch {
+        this.wakeLock = null;
+        this.isWakeLockEnabled = false;
+      }
+    },
+    async releaseWakeLock() {
+      this.wantsWakeLock = false;
+
+      if (!this.wakeLock) {
+        this.isWakeLockEnabled = false;
+        return;
+      }
+
+      const lock = this.wakeLock;
+      this.wakeLock = null;
+      this.isWakeLockEnabled = false;
+      await lock.release();
+    },
+    onVisibilityChange() {
+      if (document.visibilityState === 'visible' && this.wantsWakeLock && !this.wakeLock) {
+        this.requestWakeLock();
+      }
     },
     createRandomDeal() {
       const deck = this.shuffle(this.createDeck());
@@ -819,7 +880,6 @@ export default {
       if (card && !card.faceUp) card.faceUp = true;
     },
     findAutoCompletePlan() {
-      if (this.stock.length || this.waste.length) return [];
       if (this.tableau.some((pile) => pile.some((card) => !card.faceUp))) return [];
 
       const foundations = JSON.parse(JSON.stringify(this.foundations));

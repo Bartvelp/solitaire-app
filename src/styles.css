@@ -198,7 +198,7 @@ button {
   justify-items: center;
   min-width: 1.1rem;
   font-weight: 800;
-  font-size: clamp(0.72rem, 2.2vw, 1rem);
+  font-size: clamp(1.3rem, 4vw, 1.8rem);
   line-height: 0.95;
 }
 
@@ -296,7 +296,8 @@ button {
 .undo-button,
 .new-game,
 .auto-complete,
-.test-button {
+.test-button,
+.wake-button {
   position: fixed;
   border: 0;
   color: #11241f;
@@ -345,6 +346,22 @@ button {
   font-weight: 800;
 }
 
+.wake-button {
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(84px, calc(env(safe-area-inset-bottom) + 84px));
+  min-width: 74px;
+  min-height: 38px;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.wake-button.active {
+  color: #fff8df;
+  background: #176b52;
+}
+
 .auto-complete {
   left: 50%;
   bottom: max(18px, env(safe-area-inset-bottom));
@@ -359,9 +376,14 @@ button {
 .undo-button:hover,
 .new-game:hover,
 .auto-complete:hover,
-.test-button:hover {
+.test-button:hover,
+.wake-button:hover {
   transform: translateY(-2px);
   background: #fff0ad;
+}
+
+.wake-button.active:hover {
+  background: #238365;
 }
 
 .auto-complete:hover {
@@ -376,7 +398,8 @@ button {
 
 .new-game:disabled,
 .auto-complete:disabled,
-.test-button:disabled {
+.test-button:disabled,
+.wake-button:disabled {
   cursor: default;
   opacity: 0.55;
   transform: none;
@@ -589,11 +612,11 @@ button {
   }
 
   .corner {
-    font-size: clamp(0.6rem, 2.6vw, 0.76rem);
+    font-size: clamp(0.95rem, 3.8vw, 1.2rem);
   }
 
   .center-suit {
-    font-size: clamp(1.55rem, 6vw, 2.25rem);
+    font-size: clamp(2rem, 6.5vw, 2.8rem);
   }
 
   .card-back,
